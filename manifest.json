@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube AdBlock (Arc)",
+  "version": "1.0.0",
+  "description": "Blocks YouTube ads: network, video, banners.",
+  "permissions": ["declarativeNetRequest", "scripting", "storage"],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://*.youtube-nocookie.com/*",
+    "*://*.googlevideo.com/*",
+    "*://*.googlesyndication.com/*",
+    "*://*.doubleclick.net/*",
+    "https://sponsor.ajay.app/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "yt_block_rules",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"],
+      "js": ["page_world.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"],
+      "js": ["content.js", "sponsorblock.js", "pattern.js", "remote.js"],
+      "css": ["styles.css"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "action": {
+    "default_title": "YouTube AdBlock"
+  }
+}

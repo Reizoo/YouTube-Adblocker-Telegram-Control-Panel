@@ -1,0 +1,37 @@
+/* Hide ad containers in feed / sidebar / masthead */
+ytd-ad-slot-renderer,
+ytd-promoted-sparkles-web-renderer,
+ytd-promoted-video-renderer,
+ytd-display-ad-renderer,
+ytd-promoted-sparkles-text-search-renderer,
+ytd-search-pyv-renderer,
+ytd-in-feed-ad-layout-renderer,
+ytd-banner-promo-renderer,
+ytd-statement-banner-renderer,
+ytd-action-companion-ad-renderer,
+ytd-companion-slot-renderer,
+ytd-merch-shelf-renderer,
+ytd-mealbar-promo-renderer,
+ytd-popup-container tp-yt-paper-dialog:has(ytd-enforcement-message-view-model),
+tp-yt-paper-dialog:has(ytd-enforcement-message-view-model),
+#masthead-ad,
+ytm-promoted-sparkles-web-renderer,
+ytm-promoted-video-renderer,
+#player-ads,
+.ytp-ad-module,
+.ytp-ad-overlay-slot,
+.ytp-ad-overlay-container,
+.ytp-ad-text-overlay,
+.video-ads,
+.ytp-featured-product,
+.iv-promo,
+ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"],
+ytd-rich-item-renderer:has(ytd-ad-slot-renderer),
+ytd-reel-video-renderer:has(.ytd-ad-slot-renderer) {
+  display: none !important;
+}
+
+/* Restore main player size if ad overlay was holding it */
+.html5-video-player.ad-showing video {
+  visibility: visible !important;
+}
