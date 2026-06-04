@@ -1,33 +1,49 @@
-# YT AdBlock — Telegram bot (Python)
+# Telegram bot bridge
 
-Локальный бот + WebSocket мост. Управляет YouTube в Arc через Telegram.
+Local Python process. Long-polls Telegram and runs a WebSocket bridge on
+`ws://127.0.0.1:8765` that the browser extension connects to.
 
 ## Setup
 
 1. `copy config.example.json config.json`
-2. У @BotFather -> `/newbot` -> вставь токен в `telegramToken`.
-3. Напиши боту любое сообщение, открой `https://api.telegram.org/bot<TOKEN>/getUpdates`, скопируй `from.id` -> `ownerUserId`.
+2. Open `@BotFather` → `/newbot` → paste the HTTP token into `telegramToken`.
+3. Message your new bot once, then visit
+   `https://api.telegram.org/bot<TOKEN>/getUpdates` and copy `from.id` into
+   `ownerUserId`.
 4. `pip install -r requirements.txt`
-5. `python bot.py` (или `start.cmd`).
+5. `python bot.py` (or double-click `start.cmd`).
 
-Расширение в Arc подключится к `ws://127.0.0.1:8765` автоматом.
+The extension auto-connects to `ws://127.0.0.1:8765`.
 
-## Команды
+## Telegram commands
 
-| Команда | Что делает |
+| Command | What it does |
 |---|---|
-| `/play` `/pause` | воспроизв / пауза |
-| `/fwd N` | вперёд N сек (def 30) |
-| `/back N` | назад N сек |
-| `/jump M:SS` | абсолютное время |
-| `/rs` | начать запись рекламы (markStart) |
-| `/re` | закончить запись + сохранить fingerprint |
-| `/skip` | пропустить ближайший спонсор |
-| `/clear` | удалить свои сегменты текущего видео |
-| `/status` | что идёт сейчас |
-| `/menu` | inline-кнопки |
+| `/menu`, `/start` | Show the reply keyboard + status |
+| `/status` | Refresh status |
+| `/jump M:SS` | Seek to absolute time |
+| `/help` | Help |
 
-## Autostart (Windows)
+### Keyboard
 
-Task Scheduler -> Create Task -> Trigger: At log on -> Action:
-`python C:\Users\Reiz\Desktop\adblocker\yt-adblock\bot\bot.py`.
+```
+[⏯ Play / Pause]      [⏭ Skip sponsor]
+[⏪ -60] [⏪ -30] [⏪ -10]
+[⏩ +10] [⏩ +30] [⏩ +60]
+[🔴 Record start]     [🟢 Record end]
+[📊 Status]           [🗑 Clear segments]
+```
+
+## Autostart on Windows
+
+Task Scheduler → Create Task → Trigger: *At log on* → Action:
+`python C:\path\to\yt-adblock\bot\bot.py`
+
+## How it talks to the extension
+
+The content script `remote.js` opens a WebSocket to `127.0.0.1:8765` from any
+youtube.com tab and reconnects every 3 s. If multiple tabs are connected, the
+bot prefers the one whose latest `hello` / `status` showed an active video.
+
+If no tab is connected, the bot replies with `Browser offline / no YT tab`
+after a 5 s timeout.

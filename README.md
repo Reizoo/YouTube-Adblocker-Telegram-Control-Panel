@@ -1,63 +1,65 @@
 # YouTube AdBlocker + Telegram Control Panel
 
-Chromium-расширение (Arc / Chrome / Edge) + локальный Telegram-бот для управления YouTube с телефона.
+A Chromium extension (Arc / Chrome / Edge) plus a local Telegram bot to control YouTube playback from your phone.
 
-## Что внутри
+[Русская версия](./README.ru.md)
 
-### Расширение (Manifest V3)
-- Блокировка сетевых рекламных запросов (`doubleclick`, `googlesyndication`, `pagead`, `&oad=` и т.п.) через `declarativeNetRequest`.
-- Авто-скип преролл/мидролл рекламы YouTube (клик по skip-кнопке или fast-forward до конца).
-- Удаление баннеров / "ad-blocker detected" попапов.
-- Интеграция с **SponsorBlock** API — авто-скип спонсорских сегментов внутри ролика, цветные маркеры на таймлайне.
-- Ручная разметка сегментов хоткеями `[` / `]` (старт / стоп). Сохраняется в `chrome.storage.local` по `videoId`.
-- **Паттерн-узнавание рекламы**: при ручной разметке вытягивается транскрипт сегмента, сохраняется fingerprint по `channelId`. На новых видео того же автора похожие сегменты находятся через Jaccard-сходство + n-gram и пропускаются автоматически (цвет `#ff8800` на таймлайне).
-- Watchdog для зависших ad-плееров (зацикленный seek + чёрный экран).
+## Features
 
-### Telegram-бот
-- Локальный Python-процесс на ПК. Долгое polling Telegram + WebSocket-мост на `ws://127.0.0.1:8765`.
-- Управление YouTube с телефона: play/pause toggle, перемотка ±5/±10/±30/±60, скип спонсора, старт/конец записи рекламы, очистка сегментов, статус.
-- Persistent reply-клавиатура с группировкой по контекстам.
-- Статус: название, автор, прогресс, состояние.
-- Player API дёргается из MAIN world (`movie_player.playVideo()/pauseVideo()/getVideoData()`) — обходит autoplay-policy.
-- Авторизация по `ownerUserId` — все остальные игнорятся.
+### Browser extension (Manifest V3)
+- Network-level ad blocking via `declarativeNetRequest` (`doubleclick`, `googlesyndication`, `pagead`, `&oad=`, etc.).
+- Auto-skip of YouTube pre-roll / mid-roll ads (click the skip button, or fast-forward to the end with a stall watchdog).
+- Hides banners, masthead ads, and the "ad blocker detected" popup.
+- **SponsorBlock** API integration — auto-skips in-video sponsor segments and renders colored markers on the timeline.
+- Manual segment marking via `[` / `]` hotkeys (start / end). Stored in `chrome.storage.local` keyed by `videoId`.
+- **Cross-video ad pattern recognition**: when you mark a segment, its transcript is fingerprinted and stored per `channelId`. On new videos by the same author, the transcript is scanned for similar segments (Jaccard similarity + n-gram match) and they are auto-skipped (orange marker `#ff8800`).
+- Watchdog for stuck ad players (loops the seek + freezes on black screen).
 
-## Структура
+### Telegram bot
+- Local Python process on your PC. Long-polls Telegram and runs a WebSocket bridge on `ws://127.0.0.1:8765`.
+- Phone-side controls: play/pause toggle, seek ±10 / ±30 / ±60, skip-to-end-of-sponsor, start/stop ad recording, clear segments, status.
+- Persistent reply keyboard grouped by context.
+- Status card: video title, author, progress, playback state, segment count.
+- Driven via the YT player MAIN-world API (`movie_player.playVideo()/pauseVideo()/getVideoData()`) — bypasses autoplay-policy restrictions.
+- Single-owner authorization via `ownerUserId` — all other Telegram accounts are ignored.
+
+## Repository layout
 
 ```
 yt-adblock/
-├── manifest.json          MV3 манифест
-├── rules.json             declarativeNetRequest правила
-├── content.js             авто-скип video ads + watchdog
-├── sponsorblock.js        SB API + хоткеи + кастомные сегменты
-├── pattern.js             fingerprint-узнавание per channel
-├── remote.js              WS-клиент для бота
-├── page_world.js          MAIN-world bridge для YT player API
-├── styles.css             прячет ad-контейнеры
+├── manifest.json          MV3 manifest
+├── rules.json             declarativeNetRequest rules
+├── content.js             video-ad auto-skip + stall watchdog
+├── sponsorblock.js        SponsorBlock API + hotkeys + custom segments
+├── pattern.js             per-channel transcript fingerprint matching
+├── remote.js              WebSocket client for the bot bridge
+├── page_world.js          MAIN-world bridge for the YT player API
+├── styles.css             hides ad containers
 └── bot/
-    ├── bot.py             aiogram бот + websockets сервер
+    ├── bot.py             aiogram bot + websockets server
     ├── requirements.txt
     ├── config.example.json
     ├── start.cmd
     └── README.md
 ```
 
-## Установка
+## Setup
 
-### 1. Расширение
+### 1. Install the extension
 
-1. `arc://extensions` (или `chrome://extensions`)
-2. Включи **Developer mode**
-3. **Load unpacked** -> выбери папку проекта (`yt-adblock/`)
-4. Перезагрузи открытые YouTube-вкладки
+1. Open `arc://extensions` (or `chrome://extensions`).
+2. Enable **Developer mode**.
+3. Click **Load unpacked** and pick the project folder (`yt-adblock/`).
+4. Reload any open YouTube tabs.
 
-### 2. Telegram-бот
+### 2. Configure the Telegram bot
 
 ```powershell
 cd bot
 copy config.example.json config.json
 ```
 
-Открой `config.json`:
+Edit `config.json`:
 ```json
 {
   "telegramToken": "123456:ABC...",
@@ -65,69 +67,69 @@ copy config.example.json config.json
   "wsPort": 8765
 }
 ```
-- **telegramToken** — у `@BotFather` -> `/newbot` -> копируй HTTP-токен.
-- **ownerUserId** — напиши боту любое сообщение, открой `https://api.telegram.org/bot<TOKEN>/getUpdates`, скопируй `from.id`.
+- **telegramToken** — from `@BotFather` → `/newbot` → copy the HTTP API token.
+- **ownerUserId** — message your new bot once, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` and copy `from.id`.
 
-Установка зависимостей + запуск:
+Install deps and run:
 ```powershell
 pip install -r requirements.txt
 python bot.py
 ```
-или дабл-клик `start.cmd`.
+Or double-click `start.cmd`.
 
-### 3. Autostart (Windows)
+### 3. Autostart on Windows
 
-Task Scheduler -> Create Task -> Trigger: At log on -> Action:
-`python C:\путь\к\yt-adblock\bot\bot.py`
+Task Scheduler → Create Task → Trigger: *At log on* → Action:
+`python C:\path\to\yt-adblock\bot\bot.py`
 
-## Команды Telegram
+## Telegram commands
 
-| Команда | Описание |
+| Command | Description |
 |---|---|
-| `/menu`, `/start` | показать клавиатуру + статус |
-| `/status` | обновить статус |
-| `/jump M:SS` | прыгнуть на абсолютное время |
-| `/help` | помощь |
+| `/menu`, `/start` | Show keyboard + status |
+| `/status` | Refresh status |
+| `/jump M:SS` | Jump to absolute time |
+| `/help` | Help |
 
-### Клавиатура
+### Keyboard
 
 ```
-[⏯ Play / Pause]      [⏭ Скип рекламы]
+[⏯ Play / Pause]      [⏭ Skip sponsor]
 [⏪ -60] [⏪ -30] [⏪ -10]
 [⏩ +10] [⏩ +30] [⏩ +60]
-[🔴 Старт записи]     [🟢 Конец записи]
-[📊 Статус]           [🗑 Очистить сегменты]
+[🔴 Record start]     [🟢 Record end]
+[📊 Status]           [🗑 Clear segments]
 ```
 
-## Хоткеи в браузере
+## Browser hotkeys
 
-- `[` — пометить старт рекламного сегмента
-- `]` — пометить конец + сохранить
-- `\` — удалить свои сегменты для текущего видео
+- `[` — mark the start of an ad segment
+- `]` — mark the end and save
+- `\` — clear your manual segments for the current video
 
-## Цвета маркеров на таймлайне
+## Timeline marker colors
 
-| Цвет | Категория |
+| Color | Category |
 |---|---|
-| 🟢 `#00d400` | sponsor (SB API) |
+| 🟢 `#00d400` | sponsor (SponsorBlock API) |
 | 🟡 `#ffff00` | selfpromo |
-| 🟣 `#cc00ff` | interaction |
-| 🔴 `#ff2d2d` | свой ручной сегмент |
-| 🟠 `#ff8800` | pattern-detected (паттерн-узнавание) |
+| 🟣 `#cc00ff` | interaction reminder |
+| 🔴 `#ff2d2d` | your manual segment |
+| 🟠 `#ff8800` | pattern-detected (cross-video recognition) |
 
-## Технологии
+## Tech stack
 
-- **Расширение**: vanilla JS, Manifest V3, `declarativeNetRequest`, `chrome.storage.local`, MAIN-world content scripts.
-- **Bot**: Python 3.12, [aiogram](https://aiogram.dev/) 3.x, `websockets`, `truststore` (для корпоративных SSL).
-- **API**: [SponsorBlock](https://sponsor.ajay.app/), YouTube `timedtext` транскрипты, YT player IFrame API.
+- **Extension**: vanilla JS, Manifest V3, `declarativeNetRequest`, `chrome.storage.local`, MAIN-world content scripts.
+- **Bot**: Python 3.12, [aiogram](https://aiogram.dev/) 3.x, `websockets`, `truststore` (for corporate SSL inspection).
+- **External APIs**: [SponsorBlock](https://sponsor.ajay.app/), YouTube `timedtext` transcripts, YT IFrame Player API.
 
-## Безопасность
+## Security
 
-- `bot/config.json` в `.gitignore` — токен не утечёт.
-- Бот слушает только `127.0.0.1` — снаружи недоступен.
-- Авторизация в Telegram по `ownerUserId`.
-- Нет внешних API кроме Telegram + SponsorBlock + youtube.com.
+- `bot/config.json` is in `.gitignore` — your token never reaches Git.
+- The bot listens on `127.0.0.1` only — no external exposure.
+- Telegram side is gated by `ownerUserId`; unauthorized senders are silently dropped (after one polite "Unauthorized" reply).
+- No third-party APIs other than Telegram, SponsorBlock, and youtube.com itself.
 
-## Лицензия
+## License
 
-MIT
+MIT — see [LICENSE](./LICENSE).
